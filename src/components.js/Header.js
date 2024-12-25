@@ -1,10 +1,35 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toggleMenuState } from '../utils/appSlice';
+import { YOUTUBE_SEARCH_API } from '../utils/constant';
 
 const Header = () => {
     
     const dispatch= useDispatch();
+    const[SearchQuery,setSearchQuery]=useState("");
+    const[Suggestions,setSuggestions] =useState([]);
+    const[ShowSuggestions, setShowSuggestions]= useState(false);
+
+    const apiUrl = `https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=25&key=${process.env.REACT_APP_GOOGLE_API_KEY}&q=${encodeURIComponent(SearchQuery.trim())}`;
+    // const API_URL="http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=" + encodeURIComponent(SearchQuery.trim());
+    
+    useEffect(()=>{
+        const timer= setTimeout(()=> getSearchSuggestions(),1000);
+
+        return()=>{
+            clearTimeout(timer);
+        }
+    },[SearchQuery])
+
+    const getSearchSuggestions = async ()=>{
+        
+        const data= await fetch(apiUrl);
+        
+        const json =await data.json();
+        console.log("API CALL -"+SearchQuery);
+        setSuggestions(json?.items)
+        console.log(json?.items[0]?.snippet?.title)
+    }
     const handleMenuToggleState =()=>{
         
         dispatch(toggleMenuState())
@@ -24,11 +49,24 @@ const Header = () => {
             
             </div>
             <div className='col-span-10 pt-3 pl-16'>
-                <input className='w-1/2 border border-gray-300 p-2 rounded-l-full'
-                    type="text"
-                    placeholder='Search'
-                />
-                <button className='border border-gray-400 px-5 py-2 rounded-r-full bg-gray-100'>🔍</button>
+                <div>
+                    <input className='px-8 w-1/2 border border-gray-300 p-2 rounded-l-full'
+                        type="text"
+                        placeholder='Search'
+                        value={SearchQuery}
+                        onChange={(e)=> setSearchQuery(e.target.value)}
+                        onFocus={()=> setShowSuggestions(true)}
+                        onBlur={()=> setShowSuggestions(false)}
+                    />
+                    <button className='border border-gray-400 px-5 py-2 rounded-r-full bg-gray-100'>🔍</button>
+                </div>
+                {ShowSuggestions && (<div className='fixed bg-white mx-1.5 py-2 px-3 w-[31rem] rounded-lg shadow-2xl border border-gray-200'>
+                    <ul className=''>
+                        {Suggestions.map((suggestion)=>(
+                            <li  key={suggestion} className='py-2 m-1 shadow-sm hover:bg-gray-100 '>🔍 {suggestion.snippet?.title}</li>
+                        ))}            
+                    </ul>
+                </div>)}
             </div>
             <div className='col-span-1 pt-3 pr-0'>
                 <img className='h-12 ' 
